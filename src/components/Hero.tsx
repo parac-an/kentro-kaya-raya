@@ -10,7 +10,7 @@ const Hero = () => {
         <div className="max-w-4xl mx-auto text-center animate-fade-in">
           <div className="mb-6">
             <h1 className="text-6xl md:text-8xl font-bold text-primary-foreground mb-2 tracking-tight">
-              RICHRED
+              KENTRO
             </h1>
             <p className="text-xl md:text-2xl text-primary-foreground/90 font-medium">
               Bangun Finansialmu, Mulai Sekarang
