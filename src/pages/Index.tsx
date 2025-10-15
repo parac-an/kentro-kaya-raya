@@ -1,85 +1,92 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import ArticleCard from "@/components/ArticleCard";
 import VideoCard from "@/components/VideoCard";
 import SearchFilter from "@/components/SearchFilter";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface Article {
+  id: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  date: string;
+  image?: string;
+}
+
+interface Video {
+  id: string;
+  title: string;
+  description: string;
+  youtube_id: string;
+  category: string;
+}
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Semua Kategori");
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const articles = [
-    {
-      title: "Cara Membuat Budget Bulanan yang Efektif",
-      excerpt: "Pelajari langkah-langkah praktis untuk membuat anggaran bulanan yang sesuai dengan kebutuhan dan tujuan finansial Anda.",
-      category: "Budgeting",
-      date: "15 Okt 2024",
-      image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80"
-    },
-    {
-      title: "Investasi untuk Pemula: Mulai dari Mana?",
-      excerpt: "Panduan lengkap memulai investasi bagi pemula, mulai dari memahami jenis-jenis investasi hingga strategi yang tepat.",
-      category: "Investasi",
-      date: "12 Okt 2024",
-      image: "https://images.unsplash.com/photo-1579621970795-87facc2f976d?w=800&q=80"
-    },
-    {
-      title: "Tips Menabung untuk Dana Darurat",
-      excerpt: "Mengapa dana darurat penting dan bagaimana cara mengumpulkannya dengan strategi yang tepat dan mudah diterapkan.",
-      category: "Tabungan",
-      date: "10 Okt 2024",
-      image: "https://images.unsplash.com/photo-1634128221889-82ed6efebfc3?w=800&q=80"
-    },
-    {
-      title: "Mengelola Keuangan Pribadi di Usia 20-an",
-      excerpt: "Panduan praktis untuk anak muda dalam mengelola uang, membangun kebiasaan finansial yang baik sejak dini.",
-      category: "Finansial Pribadi",
-      date: "8 Okt 2024",
-      image: "https://images.unsplash.com/photo-1607863680198-23d4b2565df0?w=800&q=80"
-    },
-    {
-      title: "Strategi Investasi Jangka Panjang yang Menguntungkan",
-      excerpt: "Pelajari berbagai strategi investasi jangka panjang yang terbukti menguntungkan dan sesuai dengan profil risiko Anda.",
-      category: "Investasi",
-      date: "5 Okt 2024",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80"
-    },
-    {
-      title: "Memahami Asuransi: Mana yang Anda Butuhkan?",
-      excerpt: "Kenali jenis-jenis asuransi yang tersedia dan pelajari cara memilih asuransi yang sesuai dengan kebutuhan Anda.",
-      category: "Asuransi",
-      date: "3 Okt 2024",
-      image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&q=80"
-    }
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const videos = [
-    {
-      title: "Panduan Lengkap Budgeting untuk Pemula",
-      description: "Video tutorial lengkap tentang cara membuat dan mengelola budget bulanan yang efektif.",
-      youtubeId: "dQw4w9WgXcQ",
-      category: "Budgeting"
-    },
-    {
-      title: "Investasi Saham: Dari Nol hingga Mahir",
-      description: "Pelajari dasar-dasar investasi saham dan strategi yang tepat untuk pemula.",
-      youtubeId: "dQw4w9WgXcQ",
-      category: "Investasi"
-    },
-    {
-      title: "Tips Menabung 30% dari Gaji Bulanan",
-      description: "Strategi praktis untuk menabung lebih banyak tanpa mengurangi kualitas hidup Anda.",
-      youtubeId: "dQw4w9WgXcQ",
-      category: "Tabungan"
-    },
-    {
-      title: "Financial Planning untuk Generasi Milenial",
-      description: "Panduan perencanaan keuangan yang sesuai dengan gaya hidup milenial dan Gen Z.",
-      youtubeId: "dQw4w9WgXcQ",
-      category: "Finansial Pribadi"
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch articles
+      const { data: articlesData, error: articlesError } = await supabase
+        .from('articles')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (articlesError) throw articlesError;
+
+      // Fetch videos
+      const { data: videosData, error: videosError } = await supabase
+        .from('videos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (videosError) throw videosError;
+
+      // Format articles data
+      const formattedArticles = articlesData?.map(article => ({
+        id: article.id,
+        title: article.title,
+        excerpt: article.excerpt,
+        category: article.category,
+        date: new Date(article.date).toLocaleDateString('id-ID', { 
+          day: 'numeric', 
+          month: 'short', 
+          year: 'numeric' 
+        }),
+        image: article.image
+      })) || [];
+
+      // Format videos data
+      const formattedVideos = videosData?.map(video => ({
+        id: video.id,
+        title: video.title,
+        description: video.description,
+        youtube_id: video.youtube_id,
+        category: video.category
+      })) || [];
+
+      setArticles(formattedArticles);
+      setVideos(formattedVideos);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error("Gagal memuat data. Silakan refresh halaman.");
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,18 +123,26 @@ const Index = () => {
             onCategoryChange={setSelectedCategory}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-            {filteredArticles.map((article, index) => (
-              <ArticleCard key={index} {...article} />
-            ))}
-          </div>
-
-          {filteredArticles.length === 0 && (
+          {loading ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">
-                Tidak ada artikel yang sesuai dengan pencarian Anda
-              </p>
+              <p className="text-muted-foreground text-lg">Memuat artikel...</p>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+                {filteredArticles.map((article) => (
+                  <ArticleCard key={article.id} {...article} />
+                ))}
+              </div>
+
+              {filteredArticles.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground text-lg">
+                    Tidak ada artikel yang sesuai dengan pencarian Anda
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -143,18 +158,26 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
-            {filteredVideos.map((video, index) => (
-              <VideoCard key={index} {...video} />
-            ))}
-          </div>
-
-          {filteredVideos.length === 0 && (
+          {loading ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">
-                Tidak ada video yang sesuai dengan pencarian Anda
-              </p>
+              <p className="text-muted-foreground text-lg">Memuat video...</p>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                {filteredVideos.map((video) => (
+                  <VideoCard key={video.id} title={video.title} description={video.description} youtubeId={video.youtube_id} category={video.category} />
+                ))}
+              </div>
+
+              {filteredVideos.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground text-lg">
+                    Tidak ada video yang sesuai dengan pencarian Anda
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
